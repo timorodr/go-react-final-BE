@@ -5,7 +5,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/timorodr/go-react-final/server/routes" // import our own routes can be internal or external
+	// "github.com/sashabaranov/go-openai" // import our own routes can be internal or external
+	"github.com/timorodr/go-react-final/server/routes"
 )
 
 func main() {
@@ -14,6 +15,7 @@ func main() {
 		port = "8000"
 	}
 
+	// c := openai.NewClient(os.Getenv("OPENAI_KEY"))
 	// config := cors.DefaultConfig()
 	// config.AllowOrigins = []string{"https://go-react-fe.netlify.app"}
 
