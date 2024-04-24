@@ -24,6 +24,8 @@ func main() {
 	router.Use(cors.Default())
 	// router.Use(cors.New(config))
 
+	routes.UserRoutes(router)
+
 	router.POST("/entry/create", routes.AddEntry)
 	router.GET("/entries", routes.GetEntries)
 	router.GET("/entry/:id/", routes.GetEntryById)
@@ -32,5 +34,11 @@ func main() {
 	router.PUT("/entry/update/:id", routes.UpdateEntry)
 	// router.PUT("/ingredient/update/:id", routes.UpdateIngredient)
 	router.DELETE("/entry/delete/:id", routes.DeleteEntry)
+
+	router.GET("/api-2", func(c *gin.Context) {
+		c.JSON(200, gin.H{"success": "Access granted for api-2"})
+	})
+
+
 	router.Run(":" + port)
 }
