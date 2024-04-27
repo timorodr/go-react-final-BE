@@ -146,29 +146,29 @@
 // 	}
 // }
 
-// // AddMedicationForUser adds a medication to a user's medications list
-// // func AddMedicationForUser(ctx context.Context, client *mongo.Client, userID string, medication Medication) (*User, error) {
-// //     // Find the user by ID
-// //     // userCollection := client.Database("your_database_name").Collection("users")
-// //     filter := bson.M{"user_id": userID}
-// //     var user models.Medication
-// //     err := userCollection.FindOne(ctx, filter).Decode(&user)
-// //     if err != nil {
-// //         if err == mongo.ErrNoDocuments {
-// //             return nil, fmt.Errorf("user with ID %s not found", userID)
-// //         }
-// //         return nil, fmt.Errorf("error finding user: %w", err)
-// //     }
+// AddMedicationForUser adds a medication to a user's medications list
+// func AddMedicationForUser(ctx context.Context, client *mongo.Client, userID string, medication Medication) (*User, error) {
+//     // Find the user by ID
+//     // userCollection := client.Database("your_database_name").Collection("users")
+//     filter := bson.M{"user_id": userID}
+//     var user models.User
+//     err := userCollection.FindOneByID(ctx, filter).Decode(&user)
+//     if err != nil {
+//         if err == mongo.ErrNoDocuments {
+//             return nil, fmt.Errorf("user with ID %s not found", userID)
+//         }
+//         return nil, fmt.Errorf("error finding user: %w", err)
+//     }
 
-// //     // Append the medication to the user's Medications slice
-// //     user.Medications = append(user.Medications, medication)
+//     // Append the medication to the user's Medications slice
+//     user.Medications = append(user.Medications, medication)
 
-// //     // Update the user document in the database
-// //     update := bson.M{"$set": bson.M{"medications": user.Medications}}
-// //     _, err = userCollection.UpdateByID(ctx, userID, update)
-// //     if err != nil {
-// //         return nil, fmt.Errorf("error updating user medications: %w", err)
-// //     }
+//     // Update the user document in the database
+//     update := bson.M{"$set": bson.M{"medications": user.Medications}}
+//     _, err = userCollection.UpdateByID(ctx, userID, update)
+//     if err != nil {
+//         return nil, fmt.Errorf("error updating user medications: %w", err)
+//     }
 
-// //     return &user, nil
-// // }
+//     return &user, nil
+// }

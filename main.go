@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	// "github.com/sashabaranov/go-openai" // import our own routes can be internal or external
 	"github.com/timorodr/go-react-final/server/routes"
+	// middleware "github.com/timorodr/go-react-final/server/middleware"
 )
 
 func main() {
@@ -16,19 +17,24 @@ func main() {
 	}
 
 	// c := openai.NewClient(os.Getenv("OPENAI_KEY"))
-	// config := cors.DefaultConfig()
-	// config.AllowOrigins = []string{"https://go-react-fe.netlify.app"}
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:3000"}
 
 	router := gin.New()
 	router.Use(gin.Logger()) // shows when whcih API was called
-	router.Use(cors.Default())
-	// router.Use(cors.New(config))
-
+	// router.Use(cors.Default())
+	router.Use(cors.New(config))
 	routes.UserRoutes(router)
 
+	// router.Use(middleware.Authentication())
+	// authorized := router.Group("/")
+    // authorized.Use(middleware.Authentication())
+
+	// authorized.POST("/entry/create", routes.AddEntry)
 	router.POST("/entry/create", routes.AddEntry)
-	router.GET("/entries", routes.GetEntries)
-	router.GET("/entry/:id/", routes.GetEntryById)
+	// authorized.GET("/entries", routes.GetEntries) //
+	router.GET("/entries", routes.GetEntries) // 
+	// authorized.GET("/entry/:id/", routes.GetEntryById)
 	// router.GET("/ingredient/:ingredient", routes.GetEntriesByIngredient)
 
 	router.PUT("/entry/update/:id", routes.UpdateEntry)
