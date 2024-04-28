@@ -155,8 +155,15 @@ func Login() gin.HandlerFunc {
 
 func AddEntry(c *gin.Context) { // access to params and request through gin.Context
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-	var medication models.Medication
+	// var medication models.Medication
+	userID := c.MustGet("user_id").(string)
+  	userIDObject, err := primitive.ObjectIDFromHex(userID)
+  	if err != nil {
+    	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+    	return
+  	}
 
+	var medication models.Medication
 	if err := c.BindJSON(&medication); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		fmt.Println(err)
@@ -168,16 +175,23 @@ func AddEntry(c *gin.Context) { // access to params and request through gin.Cont
 		fmt.Println(validationErr)
 		return
 	}
-	medication.ID = primitive.NewObjectID()
-	result, insertErr := entryCollection.InsertOne(ctx, medication)
+	_, insertErr := entryCollection.InsertOne(ctx, medication)
 	if insertErr != nil {
 		msg := fmt.Sprintf("item was not created")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		fmt.Println(insertErr)
 		return
 	}
+	medication.ID = primitive.NewObjectID()
+
+	_, err = userCollection.UpdateByID(ctx, userIDObject, bson.M{"$push": bson.M{"medications": medication}})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	  }
 	defer cancel()
-	c.JSON(http.StatusOK, result)
+	// c.JSON(http.StatusOK, result)
+	c.JSON(http.StatusOK, gin.H{"message": "Medication added successfully"})
 }
 
 func GetEntries(c *gin.Context) {
@@ -328,3 +342,5 @@ func DeleteEntry(c *gin.Context) {
 	defer cancel()
 	c.JSON(http.StatusOK, result.DeletedCount)
 }
+
+
