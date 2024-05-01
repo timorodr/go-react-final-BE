@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	// "github.com/sashabaranov/go-openai" // import our own routes can be internal or external
 	"github.com/timorodr/go-react-final/server/routes"
-	middleware "github.com/timorodr/go-react-final/server/middleware"
+	// middleware "github.com/timorodr/go-react-final/server/middleware"
 )
 
 func main() {
@@ -27,19 +27,22 @@ func main() {
 	routes.UserRoutes(router)
 
 	// router.Use(middleware.Authentication())
-	authorized := router.Group("/user")
-    authorized.Use(middleware.Authentication())
-
-	authorized.POST("/entry/create", routes.AddEntry)
+	// authorized := router.Group("/user")
+    // authorized.Use(middleware.Authentication())
+	
+		// authorized.GET("/entries", routes.GetEntries) // 
+	
+	router.POST("/user/entry/create", routes.AddEntry)
+	router.GET("/user/entries", routes.GetEntries)
+	router.POST("/user/logout", routes.Logout)
+	router.PUT("/user/entry/update/:id", routes.UpdateEntry)
+	router.DELETE("/user/entry/delete/:id", routes.DeleteEntry)
+	
 	// router.POST("/entry/create", routes.AddEntry)
-	authorized.GET("/entries", routes.GetEntries) 
-	router.GET("/entries", routes.GetEntries) // 
 	// authorized.GET("/entry/:id/", routes.GetEntryById)
 	// router.GET("/ingredient/:ingredient", routes.GetEntriesByIngredient)
 
-	router.PUT("/entry/update/:id", routes.UpdateEntry)
 	// router.PUT("/ingredient/update/:id", routes.UpdateIngredient)
-	router.DELETE("/entry/delete/:id", routes.DeleteEntry)
 
 	router.GET("/api-2", func(c *gin.Context) {
 		c.JSON(200, gin.H{"success": "Access granted for api-2"})

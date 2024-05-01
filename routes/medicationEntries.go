@@ -152,60 +152,95 @@ func Login() gin.HandlerFunc {
 
 	}
 }
+//** user auth attempt
+// func AddEntry(c *gin.Context) { // access to params and request through gin.Context
+// 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+// 	// var medication models.Medication
+// 	// userID := c.MustGet("user_id").(string)
+//   	// userIDObject, err := primitive.ObjectIDFromHex(userID)
+//   	// if err != nil {
+//     // 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+//     // 	return
+//   	// }
 
-func AddEntry(c *gin.Context) { // access to params and request through gin.Context
+// 	var medication models.Medication
+// 	// medication.UserID = userID
+// 	if err := c.BindJSON(&medication); err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		fmt.Println(err)
+// 		return // bind JSON serializes basically?
+// 	}
+// 	validationErr := validate.Struct(medication)
+// 	if validationErr != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": validationErr.Error()})
+// 		fmt.Println(validationErr)
+// 		return
+// 	}
+// 	_, insertErr := entryCollection.InsertOne(ctx, medication)
+// 	if insertErr != nil {
+// 		msg := fmt.Sprintf("item was not created")
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+// 		fmt.Println(insertErr)
+// 		return
+// 	}
+// 	medication.ID = primitive.NewObjectID()
+
+// 	_, err = entryCollection.UpdateByID(ctx, userIDObject, bson.M{"$push": bson.M{"medications": medication}})
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	  }
+	  
+// 	defer cancel()
+// 	// c.JSON(http.StatusOK, result)
+// 	c.JSON(http.StatusOK, gin.H{"message": "Medication added successfully"})
+// }
+
+func AddEntry(c *gin.Context) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-	// var medication models.Medication
-	userID := c.MustGet("user_id").(string)
-  	userIDObject, err := primitive.ObjectIDFromHex(userID)
-  	if err != nil {
-    	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-    	return
-  	}
+	var entry models.Medication
 
-	var medication models.Medication
-	if err := c.BindJSON(&medication); err != nil {
+	if err := c.BindJSON(&entry); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		fmt.Println(err)
-		return // bind JSON serializes basically?
+		return
 	}
-	validationErr := validate.Struct(medication)
+	validationErr := validate.Struct(entry)
 	if validationErr != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": validationErr.Error()})
 		fmt.Println(validationErr)
 		return
 	}
-	_, insertErr := entryCollection.InsertOne(ctx, medication)
+	entry.ID = primitive.NewObjectID()
+	result, insertErr := entryCollection.InsertOne(ctx, entry)
 	if insertErr != nil {
-		msg := fmt.Sprintf("item was not created")
+		msg := fmt.Sprintf("order item was not created")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		fmt.Println(insertErr)
 		return
 	}
-	medication.ID = primitive.NewObjectID()
-
-	_, err = userCollection.UpdateByID(ctx, userIDObject, bson.M{"$push": bson.M{"medications": medication}})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	  }
 	defer cancel()
-	// c.JSON(http.StatusOK, result)
-	c.JSON(http.StatusOK, gin.H{"message": "Medication added successfully"})
+	c.JSON(http.StatusOK, result)
 }
 
 func GetEntries(c *gin.Context) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+	// userID := c.MustGet("user_id").(string)
+	// filter := bson.M{"medications": bson.M{}}
+	// userID, _ := c.Get("user_id")
 
-	var entries []bson.M                               // M is an unordered representation of a BSON document. This type should be used when the order of the elements does not matter. This type is handled as a regular map[string]interface{} when encoding and decoding. Elements will be serialized in an undefined, random order.
+	var entries []bson.M                     // M is an unordered representation of a BSON document. This type should be used when the order of the elements does not matter. This type is handled as a regular map[string]interface{} when encoding and decoding. Elements will be serialized in an undefined, random order.
+
+
+	
 	cursor, err := entryCollection.Find(ctx, bson.M{}) // passing through empty object you get all values if you want specific you must declare/specify
-
+	
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		fmt.Println(err)
 		return
 	}
-
+	
 	if err = cursor.All(ctx, &entries); err != nil {
 		// c.JSON serializes the given struct as JSON into the response body - it also sets the Content-Type as "application/json"
 		// process of converting a data structure or object into a format that can be easily stored or transmitted
@@ -215,8 +250,42 @@ func GetEntries(c *gin.Context) {
 	}
 	defer cancel()
 	fmt.Println(entries)
+	// fmt.Println(userID)
 	c.JSON(http.StatusOK, entries)
 }
+
+// func GetUserMedications(c *gin.Context) {
+//     // Get user ID from the authenticated user's token or session
+//     userID, _ := c.Get("user_id")
+
+//     var medications []models.Medication
+
+//     // Assuming db is your MongoDB client
+
+//     // Filter medications by user ID
+//     cursor, err := userCollection.Find(context.Background(), bson.M{"user_id": userID})
+//     if err != nil {
+//         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch medications"})
+//         return
+//     }
+//     defer cursor.Close(context.Background())
+
+//     for cursor.Next(context.Background()) {
+//         var medication models.Medication
+//         if err := cursor.Decode(&medication); err != nil {
+//             c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode medication"})
+//             return
+//         }
+//         medications = append(medications, medication)
+//     }
+
+//     if err := cursor.Err(); err != nil {
+//         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to iterate over medications"})
+//         return
+//     }
+
+//     c.JSON(http.StatusOK, medications)
+// }
 
 func GetEntryById(c *gin.Context) {
 	EntryID := c.Params.ByName("id")
@@ -343,4 +412,16 @@ func DeleteEntry(c *gin.Context) {
 	c.JSON(http.StatusOK, result.DeletedCount)
 }
 
-
+func Logout(c *gin.Context) {
+	// Access user ID from context (assuming stored by Authentication middleware)
+	userID := c.MustGet("user_id").(string)
+  
+	// Invalidate user session on server-side (e.g., remove tokens from database/cache)
+	err := helper.InvalidateUserSession(userID)
+	if err != nil {
+	  c.JSON(http.StatusInternalServerError, gin.H{"error": "error invalidating session"})
+	  return
+	}
+  
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
+  }

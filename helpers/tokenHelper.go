@@ -124,3 +124,14 @@ func UpdateAllTokens(signedToken string, signedRefreshToken string, userId strin
 
 	return
 }
+
+func InvalidateUserSession(userID string) error {
+    ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+    defer cancel()
+
+    // Update user document to remove or invalidate token field
+    update := bson.M{"$unset": bson.M{"token": 1, "refresh_token": 1}} // Replace with your update document
+
+    _, err := userCollection.UpdateByID(ctx, userID, update)
+    return err
+}
