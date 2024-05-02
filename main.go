@@ -17,13 +17,14 @@ func main() {
 	}
 
 	// c := openai.NewClient(os.Getenv("OPENAI_KEY"))
-	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"https://hilarious-biscotti-0d1872.netlify.app"}
+	// config := cors.DefaultConfig()
+	// config.AllowOrigins = []string{"https://hilarious-biscotti-0d1872.netlify.app"}
 
 	router := gin.New()
 	router.Use(gin.Logger()) // shows when whcih API was called
 	// router.Use(cors.Default())
-	router.Use(cors.New(config))
+	// router.Use(cors.New(config))
+	router.Use(cors.Default())
 	routes.UserRoutes(router)
 
 	// router.Use(middleware.Authentication())
