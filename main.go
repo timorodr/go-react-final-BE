@@ -18,7 +18,7 @@ func main() {
 
 	// c := openai.NewClient(os.Getenv("OPENAI_KEY"))
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:3000"}
+	config.AllowOrigins = []string{"https://hilarious-biscotti-0d1872.netlify.app"}
 
 	router := gin.New()
 	router.Use(gin.Logger()) // shows when whcih API was called
