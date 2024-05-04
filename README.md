@@ -6,8 +6,8 @@
 | Project Name | MediManage |
 | Description | A medication management application for improved health, reduced side effects, fewer medication errors, and increased sense of control over health. |
 | Developers | Timothy Rodriguez |
-| Live Website |  |
-| Repo | https://github.com/timorodr/capstone-be |
+| Live Website |  https://main--hilarious-biscotti-0d1872.netlify.app/ |
+| Repo | https://github.com/timorodr/go-react-final-BE |
 | Technologies | Golang, MongoDB |
 
 ## Problem Being Solved and Target Market
