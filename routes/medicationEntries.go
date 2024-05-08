@@ -74,16 +74,14 @@ func SignUp() gin.HandlerFunc {
 		}
 
 		count, err := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
-		defer cancel()
+		// defer cancel()
 		if err != nil {
 			log.Panic(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while checking for the email"})
 			return
 		}
 
-		password := HashPassword(*user.Password)
-		user.Password = &password
-
+		
 		count, err = userCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
 		defer cancel()
 		if err != nil {
@@ -91,11 +89,13 @@ func SignUp() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while checking for the phone number"})
 			return
 		}
-
+		
 		if count > 0 {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "this email or phone number already exists"})
 			return
 		}
+		password := HashPassword(*user.Password)
+		user.Password = &password
 
 		user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
@@ -104,6 +104,7 @@ func SignUp() gin.HandlerFunc {
 		token, refreshToken, _ := helper.GenerateAllTokens(*user.Email, user.User_id)
 		user.Token = &token
 		user.Refresh_token = &refreshToken
+		user.Medications = make([]models.Medication, 0)
 
 		resultInsertionNumber, insertErr := userCollection.InsertOne(ctx, user)
 		if insertErr != nil {
@@ -122,6 +123,7 @@ func SignUp() gin.HandlerFunc {
 func Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 		var user models.User
 		var foundUser models.User
 
@@ -135,19 +137,20 @@ func Login() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "login or passowrd is incorrect"})
 			return
 		}
-		defer cancel()
+		// defer cancel()
 
 		passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
+		defer cancel()
 		if passwordIsValid != true {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+			fmt.Println(msg)
 			return
 		}
-		defer cancel()
 
 		token, refreshToken, _ := helper.GenerateAllTokens(*foundUser.Email, foundUser.User_id)
+		defer cancel()
 
 		helper.UpdateAllTokens(token, refreshToken, foundUser.User_id)
-
 		c.JSON(http.StatusOK, foundUser)
 
 	}
@@ -196,63 +199,182 @@ func Login() gin.HandlerFunc {
 // 	c.JSON(http.StatusOK, gin.H{"message": "Medication added successfully"})
 // }
 
-func AddEntry(c *gin.Context) {
-	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-	var entry models.Medication
+func AddEntry() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.Params.ByName("_id")
+		if userID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+			return
+		}
 
-	if err := c.BindJSON(&entry); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		fmt.Println(err)
-		return
+		userObjectID, err := primitive.ObjectIDFromHex(userID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID format"})
+			return
+		}
+
+		var medications models.Medication
+		if err := c.ShouldBindJSON(&medications); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		medications.Medication_id = primitive.NewObjectID()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		filter := bson.D{primitive.E{Key: "_id", Value: userObjectID}}
+		update := bson.D{{Key: "$push", Value: bson.D{primitive.E{Key: "medications", Value: medications}}}}
+
+		result, err := userCollection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "medication added successfully", "result": result})
 	}
-	validationErr := validate.Struct(entry)
-	if validationErr != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": validationErr.Error()})
-		fmt.Println(validationErr)
-		return
-	}
-	entry.ID = primitive.NewObjectID()
-	result, insertErr := entryCollection.InsertOne(ctx, entry)
-	if insertErr != nil {
-		msg := fmt.Sprintf("order item was not created")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
-		fmt.Println(insertErr)
-		return
-	}
-	defer cancel()
-	c.JSON(http.StatusOK, result)
 }
+//** latest func
+// func AddEntry() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
 
+// 		user_id := c.Query("id")
+// 		if user_id == "" {
+// 			c.Header("Content-Type", "application/json")
+// 			c.JSON(http.StatusNotFound, gin.H{"error": "invalid code"})
+// 			c.Abort()
+// 			return
+// 		}
+
+// 		medication, err := primitive.ObjectIDFromHex(user_id)
+// 		if err != nil {
+// 			c.IndentedJSON(500, "Internal Server Error")
+// 		}
+// 		var medications models.Medication
+// 		medications.Medication_id = primitive.NewObjectID()
+// 		if err = c.BindJSON(&medications); err != nil {
+// 			c.IndentedJSON(http.StatusNotAcceptable, err.Error())
+// 		}
+
+// 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+
+// 		// var entry models.Medication
+
+// 		match_filter := bson.D{{Key: "$match", Value: bson.D{primitive.E{Key: "_id", Value: medication}}}}
+// 		unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$medication"}}}}
+// 		group := bson.D{{Key: "$group", Value: bson.D{primitive.E{Key: "_id", Value: "$medication_id"}, {Key: "count", Value: bson.D{primitive.E{Key: "$sum", Value: 1}}}}}}
+
+
+// 		pointcursor, err := userCollection.Aggregate(ctx, mongo.Pipeline{match_filter, unwind, group})
+// 		if err != nil {
+// 			c.IndentedJSON(500, "Internal Server Error")
+// 		}
+
+// 		var medicationinfo []bson.M
+// 		if err = pointcursor.All(ctx, &medicationinfo); err != nil {
+// 			panic(err)
+// 		}
+
+// 		// var size int32
+// 		// for _, medication_no := range medicationinfo {
+// 		// 	count := medication_no["count"]
+// 		// 	size = count.(int32)
+// 		// }
+// 		filter := bson.D{primitive.E{Key: "_id", Value: medication}}
+// 			update := bson.D{{Key: "$push", Value: bson.D{primitive.E{Key: "medication", Value: medications}}}}
+// 			result, err := userCollection.UpdateOne(ctx, filter, update)
+// 			if err != nil {
+// 				fmt.Println(err)
+// 			}
+
+
+
+
+// 		// if err := c.BindJSON(&entry); err != nil {
+// 		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		// 	fmt.Println(err)
+// 		// 	return
+// 		// }
+// 		// validationErr := validate.Struct(entry)
+// 		// if validationErr != nil {
+// 		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": validationErr.Error()})
+// 		// 	fmt.Println(validationErr)
+// 		// 	return
+// 		// }
+// 		// entry.ID = primitive.NewObjectID()
+// 		// result, insertErr := entryCollection.InsertOne(ctx, entry)
+// 		// if insertErr != nil {
+// 		// 	msg := fmt.Sprintf("order item was not created")
+// 		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+// 		// 	fmt.Println(insertErr)
+// 		// 	return
+// 		// }
+// 		defer cancel()
+// 		c.JSON(http.StatusOK, result)
+// 		// ctx.Done()
+// 	}
+// }
 func GetEntries(c *gin.Context) {
-	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-	// userID := c.MustGet("user_id").(string)
-	// filter := bson.M{"medications": bson.M{}}
-	// userID, _ := c.Get("user_id")
+	userID := c.Params.ByName("_id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user ID is required"})
+		return
+	}
 
-	var entries []bson.M                     // M is an unordered representation of a BSON document. This type should be used when the order of the elements does not matter. This type is handled as a regular map[string]interface{} when encoding and decoding. Elements will be serialized in an undefined, random order.
-
-
-	
-	cursor, err := entryCollection.Find(ctx, bson.M{}) // passing through empty object you get all values if you want specific you must declare/specify
-	
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID format"})
 		return
 	}
-	
-	if err = cursor.All(ctx, &entries); err != nil {
-		// c.JSON serializes the given struct as JSON into the response body - it also sets the Content-Type as "application/json"
-		// process of converting a data structure or object into a format that can be easily stored or transmitted
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		fmt.Println(err)
-		return
-	}
+
+	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
-	fmt.Println(entries)
-	// fmt.Println(userID)
-	c.JSON(http.StatusOK, entries)
+
+	var user models.User
+
+	err = userCollection.FindOne(ctx, bson.M{"_id": userObjectID}).Decode(&user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find user"})
+		fmt.Println(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, user.Medications)
+
 }
+//** Latest
+// func GetEntries(c *gin.Context) {
+// 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+// 	// userID := c.MustGet("user_id").(string)
+// 	// filter := bson.M{"medications": bson.M{}}
+// 	// userID, _ := c.Get("user_id")
+
+// 	var entries []bson.M                     // M is an unordered representation of a BSON document. This type should be used when the order of the elements does not matter. This type is handled as a regular map[string]interface{} when encoding and decoding. Elements will be serialized in an undefined, random order.
+
+
+	
+// 	cursor, err := entryCollection.Find(ctx, bson.M{}) // passing through empty object you get all values if you want specific you must declare/specify
+	
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		fmt.Println(err)
+// 		return
+// 	}
+	
+// 	if err = cursor.All(ctx, &entries); err != nil {
+// 		// c.JSON serializes the given struct as JSON into the response body - it also sets the Content-Type as "application/json"
+// 		// process of converting a data structure or object into a format that can be easily stored or transmitted
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		fmt.Println(err)
+// 		return
+// 	}
+// 	defer cancel()
+// 	fmt.Println(entries)
+// 	// fmt.Println(userID)
+// 	c.JSON(http.StatusOK, entries)
+// }
 
 // func GetUserMedications(c *gin.Context) {
 //     // Get user ID from the authenticated user's token or session
