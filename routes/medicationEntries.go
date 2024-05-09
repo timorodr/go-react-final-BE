@@ -201,7 +201,7 @@ func Login() gin.HandlerFunc {
 
 func AddEntry() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.Params.ByName("_id")
+		userID := c.Params.ByName("id")
 		if userID == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
 			return
@@ -317,7 +317,8 @@ func AddEntry() gin.HandlerFunc {
 // 	}
 // }
 func GetEntries(c *gin.Context) {
-	userID := c.Params.ByName("_id")
+	userID := c.Params.ByName("id")
+	fmt.Println(userID)
 	if userID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "user ID is required"})
 		return
@@ -342,7 +343,7 @@ func GetEntries(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user.Medications)
-
+	
 }
 //** Latest
 // func GetEntries(c *gin.Context) {
