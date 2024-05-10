@@ -478,62 +478,167 @@ func GetEntryById(c *gin.Context) {
 // 	defer cancel()
 // 	c.JSON(http.StatusOK, result.ModifiedCount) // number of Docs modified by the operation
 // }
+//** PRIOR
+// func UpdateEntry(c *gin.Context) {
+// 	entryID := c.Params.ByName("id")
+// 	docID, _ := primitive.ObjectIDFromHex(entryID)
+// 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+
+// 	var medication models.Medication
+
+// 	if err := c.BindJSON(&medication); err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		fmt.Println(err)
+// 		return // bind JSON serializes basically?
+// 	}
+
+// 	validationErr := validate.Struct(medication)
+// 	if validationErr != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": validationErr.Error()})
+// 		fmt.Println(validationErr)
+// 		return
+// 	}
+
+// 	result, err := entryCollection.ReplaceOne(
+// 		ctx,
+// 		bson.M{"_id": docID},
+// 		bson.M{
+// 			"id":          primitive.NewObjectID(),
+// 			"name":        medication.Name,
+// 			"dosage":      medication.Dosage,
+// 			"description": medication.Description,
+// 		},
+// 	)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		fmt.Println(err)
+// 		return
+// 	}
+// 	defer cancel()
+// 	c.JSON(http.StatusOK, result.ModifiedCount)
+// }
 
 func UpdateEntry(c *gin.Context) {
-	entryID := c.Params.ByName("id")
-	docID, _ := primitive.ObjectIDFromHex(entryID)
-	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+    userID := c.Params.ByName("id")
+    medicationID := c.Params.ByName("medication_id")
+    
+    if userID == "" || medicationID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user or medication ID"})
+        return
+    }
 
-	var medication models.Medication
+    userObjectID, err := primitive.ObjectIDFromHex(userID)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID format"})
+        return
+    }
 
-	if err := c.BindJSON(&medication); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		fmt.Println(err)
-		return // bind JSON serializes basically?
-	}
+    var medication models.Medication
+    if err := c.BindJSON(&medication); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        fmt.Println(err)
+        return
+    }
 
-	validationErr := validate.Struct(medication)
-	if validationErr != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": validationErr.Error()})
-		fmt.Println(validationErr)
-		return
-	}
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
 
-	result, err := entryCollection.ReplaceOne(
-		ctx,
-		bson.M{"_id": docID},
-		bson.M{
-			"id":          primitive.NewObjectID(),
-			"name":        medication.Name,
-			"dosage":      medication.Dosage,
-			"description": medication.Description,
-		},
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		fmt.Println(err)
-		return
-	}
-	defer cancel()
-	c.JSON(http.StatusOK, result.ModifiedCount)
+    filter := bson.D{
+        {Key: "_id", Value: userObjectID},
+        {Key: "medications.medication_id", Value: medicationID},
+    }
+    update := bson.D{
+        {Key: "$set", Value: bson.M{
+            "medications.$.name":        medication.Name,
+            "medications.$.dosage":      medication.Dosage,
+            "medications.$.description": medication.Description,
+        }},
+    }
+
+    result, err := userCollection.UpdateOne(ctx, filter, update)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update medication"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"message": "medication updated successfully", "result": result})
 }
 
+//** PRIOR
 func DeleteEntry(c *gin.Context) {
-	entryID := c.Params.ByName("id")
-	docID, _ := primitive.ObjectIDFromHex(entryID)
+    userID := c.Params.ByName("id")
+    medicationID := c.Params.ByName("medication_id")
+	fmt.Println(medicationID, "user:", userID)
+	// docID, _ := primitive.ObjectIDFromHex(medicationID)
+    
+    if userID == "" || medicationID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user or medication ID"})
+        return
+    }
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+    userObjectID, err := primitive.ObjectIDFromHex(userID)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID format"})
+        return
+    }
+    medicationObjID, err := primitive.ObjectIDFromHex(medicationID)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID format"})
+        return
+    }
 
-	result, err := entryCollection.DeleteOne(ctx, bson.M{"_id": docID})
+	filter := bson.M{
+        "_id": userObjectID,
+        "medications._id": medicationObjID,
+    }
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		fmt.Println(err)
-	}
+	update := bson.M{
+        "$pull": bson.M{"medications": bson.M{"_id": medicationObjID}},
+    }
 
-	defer cancel()
-	c.JSON(http.StatusOK, result.DeletedCount)
+	ctx := context.TODO()
+    result, err := userCollection.UpdateOne(ctx, filter, update)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete medication"})
+        return
+    }
+
+	if result.ModifiedCount == 0 {
+        c.JSON(http.StatusNotFound, gin.H{"error": "medication not found"})
+        return
+    }
+    // ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    // defer cancel()
+
+    // filter := bson.D{
+    //     {Key: "_id", Value: userObjectID},
+    //     {Key: "medications._id", Value: medicationID},
+    // }
+
+    // result, err := userCollection.DeleteOne(ctx, filter)
+    // if err != nil {
+    //     c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete medication"})
+    //     return
+    // }
+
+    c.JSON(http.StatusOK, gin.H{"message": "medication deleted successfully", "result": result})
 }
+// func DeleteEntry(c *gin.Context) {
+// 	entryID := c.Params.ByName("id")
+// 	docID, _ := primitive.ObjectIDFromHex(entryID)
+
+// 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+
+// 	result, err := entryCollection.DeleteOne(ctx, bson.M{"_id": docID})
+
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		fmt.Println(err)
+// 	}
+
+// 	defer cancel()
+// 	c.JSON(http.StatusOK, result.DeletedCount)
+// }
 
 func Logout(c *gin.Context) {
 	// Access user ID from context (assuming stored by Authentication middleware)

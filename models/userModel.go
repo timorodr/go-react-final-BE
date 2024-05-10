@@ -24,7 +24,7 @@ type User struct {
 
 
 type Medication struct {
-	Medication_id          primitive.ObjectID `bson:"_id"` // ID created by GO so we dont have to pass it help of bson pkg Golang understands this type
+	Medication_id          primitive.ObjectID `json:"medication_id" bson:"_id"` // ID created by GO so we dont have to pass it help of bson pkg Golang understands this type
 	Name        		   *string            `json:"name" bson:"name"`
 	Dosage      		   *string            `json:"dosage" bson:"dosage"`
 	Description			   *string            `json:"description" bson:"description"`
