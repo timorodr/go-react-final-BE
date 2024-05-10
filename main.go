@@ -19,7 +19,7 @@ func main() {
 	router := gin.New()
 	
 	config := cors.DefaultConfig()
-    config.AllowOrigins = []string{"https://main--hilarious-biscotti-0d1872.netlify.app/"} // Allow requests from localhost:3000
+    config.AllowOrigins = []string{"https://main--hilarious-biscotti-0d1872.netlify.app"} // Allow requests from localhost:3000
     config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"} // Allow specified methods
     config.AllowHeaders = []string{"Authorization", "Content-Type", "Token"} // Allow Authorization header
 
