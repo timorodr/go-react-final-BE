@@ -16,7 +16,7 @@ import (
 // and return a reference to a MongoDB client that can interact with my DB
 // Struct Client being returned
 func DBinstance() *mongo.Client {
-	// MongoDb := "mongodb+srv://timorodr:R0dr1guez@cluster0.edwcuv3.mongodb.net/caloriesdb?retryWrites=true&w=majority"
+
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}

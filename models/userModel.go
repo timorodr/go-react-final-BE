@@ -28,5 +28,4 @@ type Medication struct {
 	Name        		   *string            `json:"name" bson:"name"`
 	Dosage      		   *string            `json:"dosage" bson:"dosage"`
 	Description			   *string            `json:"description" bson:"description"`
-	// UserID		primitive.ObjectID `json:"user_id"`
 }
