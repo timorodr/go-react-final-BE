@@ -6,7 +6,7 @@
 | Project Name | MediManage |
 | Description | A medication management application for improved health, reduced side effects, fewer medication errors, and increased sense of control over health. |
 | Developers | Timothy Rodriguez |
-| Live Website |  https://main--hilarious-biscotti-0d1872.netlify.app/ |
+| Live Website | https://main--medimanage.netlify.app/ |
 | Repo | https://github.com/timorodr/go-react-final-BE |
 | Technologies | Golang, MongoDB |
 
