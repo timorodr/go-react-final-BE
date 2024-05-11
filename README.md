@@ -32,14 +32,12 @@ List of all routes and their functionality in the app
 | Endpoint | Method | Response | Other |
 | -------- | ------ | -------- | ----- |
 | /signup | POST | Creates a new user | |
-| /login | GET | Retrieves user information | |
 | /login | POST | Authenticates user | |
-| /medications | GET | JSON of all items | |
-| /medications | POST | Create new item return JSON of new item | |
-| /medications/:id | GET | JSON of item with matching id number | |
-| /medications/:id | PUT | update item with matching id, return its JSON |  |
-| /medications/:id | DELETE | delete the item with the matching id | |
-| /interactions | POST | Checks for drug interactions with medication names in request body | |
+| /user/entries/:id | GET | JSON of all items | |
+| /user/entry/create/:id | POST | Create new item return JSON of new item | |
+| /user/entry/update/:id/:medication_id | PUT | update item with matching id, return its JSON |  |
+| /user/entry/delete/:id/:medication_id | DELETE | delete the item with the matching id | |
+| /user/logout | POST | Logout user | |
 
 
 
